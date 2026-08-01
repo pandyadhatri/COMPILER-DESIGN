@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ambiguous vs. Unambiguous Grammar — Derivation Field Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f1620;
+    --ink-2:#141d2a;
+    --grid:#1d2938;
+    --paper:#e9edf3;
+    --paper-dim:#9fb0c3;
+    --amber:#e8a33d;
+    --amber-dim:#7a5a26;
+    --teal:#4fd1ae;
+    --teal-dim:#255848;
+    --line:#26374a;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.6;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:48px 48px;
+    background-attachment:fixed;
+  }
+  ::selection{background:var(--amber);color:#1a1200;}
+  a{color:var(--teal);}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 28px;}
+
+  code, .mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- HERO ---------- */
+  header.hero{padding:90px 0 60px;border-bottom:1px solid var(--line);position:relative;}
+  .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--amber);
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:22px;
+  }
+  .kicker::before{content:"";width:26px;height:1px;background:var(--amber);display:inline-block;}
+  h1.display{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(34px, 5.4vw, 58px);
+    line-height:1.05;
+    margin:0 0 22px;
+    letter-spacing:-.01em;
+  }
+  h1.display .a{color:var(--amber);}
+  h1.display .u{color:var(--teal);}
+  .hero p.lede{
+    max-width:620px;
+    color:var(--paper-dim);
+    font-size:17px;
+    margin:0 0 44px;
+  }
+
+  .tree-rig{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+    align-items:stretch;
+  }
+  .tree-card{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 18px 12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .tree-card .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    padding:3px 9px;
+    border-radius:99px;
+    display:inline-block;
+    margin-bottom:10px;
+  }
+  .tree-card.a .tag{background:rgba(232,163,61,.14);color:var(--amber);border:1px solid var(--amber-dim);}
+  .tree-card.b .tag{background:rgba(232,163,61,.14);color:var(--amber);border:1px solid var(--amber-dim);}
+  .tree-card .cap{color:var(--paper-dim);font-size:13px;margin-top:6px;}
+  .tree-card svg{width:100%;height:auto;display:block;}
+  .same-string{
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--paper-dim);
+    margin:14px 0 4px;
+  }
+  .same-string b{color:var(--paper);}
+
+  /* ---------- SECTION generic ---------- */
+  section{padding:64px 0;border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--paper-dim);
+    margin-bottom:10px;
+  }
+  h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(24px,3vw,32px);
+    margin:0 0 26px;
+    font-weight:600;
+  }
+
+  /* ---------- DEFINITIONS ---------- */
+  .defs{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .def-card{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px 24px 22px;
+    background:var(--ink-2);
+  }
+  .def-card.amber{border-top:3px solid var(--amber);}
+  .def-card.teal{border-top:3px solid var(--teal);}
+  .def-card h3{
+    font-family:'Space Grotesk',sans-serif;
+    margin:0 0 12px;
+    font-size:19px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.amber{background:var(--amber);}
+  .dot.teal{background:var(--teal);}
+  .def-card p{color:var(--paper-dim);font-size:15px;margin:0 0 14px;}
+  .def-card .rule{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    background:rgba(255,255,255,.03);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 12px;
+    color:var(--paper);
+  }
+
+  /* ---------- STEPS ---------- */
+  .steps{position:relative;padding-left:2px;}
+  .step{
+    display:grid;
+    grid-template-columns:56px 1fr;
+    gap:20px;
+    padding-bottom:34px;
+    position:relative;
+  }
+  .step:last-child{padding-bottom:0;}
+  .step::before{
+    content:"";
+    position:absolute;
+    left:27px;top:44px;bottom:0;
+    width:1px;
+    background:var(--line);
+  }
+  .step:last-child::before{display:none;}
+  .step-num{
+    width:54px;height:54px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--ink-2);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;
+    color:var(--teal);
+    flex-shrink:0;
+  }
+  .step-body h4{
+    font-family:'Space Grotesk',sans-serif;
+    margin:8px 0 8px;
+    font-size:17px;
+  }
+  .step-body p{color:var(--paper-dim);margin:0 0 10px;font-size:14.5px;max-width:640px;}
+  .step-body .rule{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    background:rgba(255,255,255,.03);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:9px 12px;
+    display:inline-block;
+    color:var(--paper);
+  }
+  .step-flow{
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:14px;
+  }
+  .flow-box{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    background:var(--ink-2);
+  }
+  .flow-box .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--paper-dim);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;}
+  .flow-box.amber{border-left:3px solid var(--amber);}
+  .flow-box.teal{border-left:3px solid var(--teal);}
+  .flow-arrow{color:var(--paper-dim);font-size:22px;}
+  .rule-line{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--paper);white-space:pre;}
+
+  /* ---------- EXAMPLES ---------- */
+  .ex-list{display:flex;flex-direction:column;gap:14px;}
+  .ex{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--ink-2);
+    overflow:hidden;
+  }
+  .ex-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 20px;
+    cursor:pointer;
+    gap:16px;
+  }
+  .ex-head:hover{background:rgba(255,255,255,.02);}
+  .ex-num{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--paper-dim);
+    font-size:12.5px;
+    min-width:34px;
+  }
+  .ex-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15.5px;
+    flex:1;
+  }
+  .ex-plus{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--teal);
+    font-size:18px;
+    transition:transform .2s ease;
+    flex-shrink:0;
+  }
+  .ex.open .ex-plus{transform:rotate(45deg);}
+  .ex-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+    border-top:1px solid transparent;
+  }
+  .ex.open .ex-body{border-top-color:var(--line);}
+  .ex-body-inner{padding:18px 20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:720px){.ex-body-inner{grid-template-columns:1fr;}}
+  .ex-col .lbl{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+    margin-bottom:8px;
+  }
+  .ex-col.amber .lbl{color:var(--amber);}
+  .ex-col.teal .lbl{color:var(--teal);}
+  .ex-col .rule{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    background:rgba(255,255,255,.03);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 12px;
+    white-space:pre-line;
+    color:var(--paper);
+  }
+  .ex-note{
+    grid-column:1/-1;
+    color:var(--paper-dim);
+    font-size:13.5px;
+    padding-top:2px;
+    border-top:1px dashed var(--line);
+    margin-top:2px;
+    padding-top:12px;
+  }
+
+  .check{
+    grid-column:1/-1;
+    border-top:1px dashed var(--line);
+    margin-top:4px;
+    padding-top:16px;
+  }
+  .check-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .check-lbl{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--paper-dim);
+  }
+  .check-string{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    color:var(--paper);
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:3px 10px;
+  }
+  .check-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:10px;
+  }
+  .check-grid.one{grid-template-columns:1fr;}
+  @media (max-width:720px){.check-grid{grid-template-columns:1fr;}}
+  .deriv{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+    background:rgba(255,255,255,.02);
+  }
+  .deriv.amber{border-left:3px solid var(--amber);}
+  .deriv.teal{border-left:3px solid var(--teal);}
+  .deriv-lbl{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--paper-dim);
+    margin-bottom:8px;
+  }
+  .deriv-body{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    white-space:pre-line;
+    color:var(--paper);
+    line-height:1.65;
+  }
+  .check-verdict{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    padding:8px 0 14px;
+  }
+  .check-verdict.amber-text{color:var(--amber);}
+  .check-verdict.teal-text{color:var(--teal);}
+
+  footer{padding:40px 0 60px;text-align:center;color:var(--paper-dim);font-size:13px;font-family:'IBM Plex Mono',monospace;}
+
+  @media (max-width:760px){
+    .defs{grid-template-columns:1fr;}
+    .tree-rig{grid-template-columns:1fr;}
+    .step-flow{grid-template-columns:1fr;}
+    .flow-arrow{transform:rotate(90deg);justify-self:center;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Formal Languages · Parsing Theory</div>
+    <h1 class="display">One string,<br><span class="a">two trees</span> — or <span class="u">exactly one</span>.</h1>
+    <p class="lede">That single fact is the whole difference between an ambiguous and an unambiguous grammar. Below: the definitions, a repeatable conversion procedure, and ten worked examples.</p>
+
+    <div class="tree-rig">
+      <div class="tree-card a">
+        <span class="tag">Derivation 1</span>
+        <svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#e8a33d" stroke-width="1.4">
+            <line x1="160" y1="34" x2="70" y2="86"/>
+            <line x1="160" y1="34" x2="160" y2="86"/>
+            <line x1="160" y1="34" x2="250" y2="86"/>
+            <line x1="70" y1="100" x2="70" y2="146"/>
+            <line x1="250" y1="100" x2="200" y2="146"/>
+            <line x1="250" y1="100" x2="250" y2="146"/>
+            <line x1="250" y1="100" x2="300" y2="146"/>
+            <line x1="200" y1="160" x2="200" y2="200"/>
+            <line x1="300" y1="160" x2="300" y2="200"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="14" fill="#e9edf3" text-anchor="middle">
+            <circle cx="160" cy="24" r="15" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="160" y="29">E</text>
+            <circle cx="70" cy="94" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="70" y="99">E</text>
+            <text x="160" y="99" fill="#9fb0c3">+</text>
+            <circle cx="250" cy="94" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="250" y="99">E</text>
+            <text x="70" y="154" fill="#9fb0c3">id</text>
+            <circle cx="200" cy="154" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="200" y="159">E</text>
+            <text x="250" y="154" fill="#9fb0c3">*</text>
+            <circle cx="300" cy="154" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="300" y="159">E</text>
+            <text x="200" y="214" fill="#9fb0c3">id</text>
+            <text x="300" y="214" fill="#9fb0c3">id</text>
+          </g>
+        </svg>
+        <div class="cap">Reads as <b class="mono">id + (id * id)</b></div>
+      </div>
+
+      <div class="tree-card b">
+        <span class="tag">Derivation 2</span>
+        <svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#e8a33d" stroke-width="1.4">
+            <line x1="160" y1="34" x2="90" y2="86"/>
+            <line x1="160" y1="34" x2="160" y2="86"/>
+            <line x1="160" y1="34" x2="260" y2="86"/>
+            <line x1="90" y1="100" x2="40" y2="146"/>
+            <line x1="90" y1="100" x2="90" y2="146"/>
+            <line x1="90" y1="100" x2="140" y2="146"/>
+            <line x1="260" y1="100" x2="260" y2="146"/>
+            <line x1="40" y1="160" x2="40" y2="200"/>
+            <line x1="140" y1="160" x2="140" y2="200"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="14" fill="#e9edf3" text-anchor="middle">
+            <circle cx="160" cy="24" r="15" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="160" y="29">E</text>
+            <circle cx="90" cy="94" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="90" y="99">E</text>
+            <text x="160" y="99" fill="#9fb0c3">*</text>
+            <text x="260" y="94" fill="#9fb0c3">id</text>
+            <circle cx="40" cy="154" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="40" y="159">E</text>
+            <text x="90" y="154" fill="#9fb0c3">+</text>
+            <circle cx="140" cy="154" r="14" fill="none" stroke="#e8a33d" stroke-width="1.4"/>
+            <text x="140" y="159">E</text>
+            <text x="40" y="214" fill="#9fb0c3">id</text>
+            <text x="140" y="214" fill="#9fb0c3">id</text>
+          </g>
+        </svg>
+        <div class="cap">Reads as <b class="mono">(id + id) * id</b></div>
+      </div>
+    </div>
+    <div class="same-string">Both trees derive <b>id + id * id</b> from <b>E → E+E | E*E | id</b> — that duplication is what ambiguity means.</div>
+  </div>
+</header>
+
+<section id="definitions">
+  <div class="wrap">
+    <div class="eyebrow">01 — Definitions</div>
+    <h2>Ambiguous vs. non-ambiguous, precisely</h2>
+    <div class="defs">
+      <div class="def-card amber">
+        <h3><span class="dot amber"></span>Ambiguous grammar</h3>
+        <p>A context-free grammar G is <b>ambiguous</b> if there exists at least one string in its language for which more than one parse tree exists — equivalently, more than one leftmost (or more than one rightmost) derivation.</p>
+        <div class="rule">∃ w ∈ L(G) : more than one parse tree for w</div>
+      </div>
+      <div class="def-card teal">
+        <h3><span class="dot teal"></span>Non-ambiguous grammar</h3>
+        <p>A grammar is <b>unambiguous</b> if every string in its language has exactly one parse tree — exactly one leftmost derivation and exactly one rightmost derivation. Structure, not just the string, is guaranteed unique.</p>
+        <div class="rule">∀ w ∈ L(G) : exactly one parse tree for w</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="conversion">
+  <div class="wrap">
+    <div class="eyebrow">02 — Procedure</div>
+    <h2>Step-by-step: converting an ambiguous grammar to an unambiguous one</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Find where the grammar branches two ways</h4>
+          <p>Pick a string the grammar accepts and try to build it two different structural ways. If you succeed, you've located the ambiguity — usually a rule that lets an operator, or a construct like nested if-statements, be grouped more than one way.</p>
+          <div class="rule">E → E + E | E * E | id&nbsp;&nbsp;→&nbsp;&nbsp;id + id * id has two trees</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Fix precedence between the competing rules</h4>
+          <p>Decide, outside the grammar, which operator should bind tighter (e.g. * before +). This ordering becomes a hierarchy of non-terminals, one per precedence level, from loosest-binding at the top to tightest at the bottom.</p>
+          <div class="rule">precedence: *  binds tighter than  +</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Fix associativity within each level</h4>
+          <p>Decide whether repeated uses of the same operator group left-to-right or right-to-left. Left-associative operators get left-recursive rules; right-associative operators get right-recursive rules.</p>
+          <div class="rule">+ and * are left-associative → left-recursive rule</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Introduce one non-terminal per precedence level</h4>
+          <p>Create a chain of non-terminals — one level per precedence tier — where each level can only be built from the next tighter level, plus its own operator applied to itself.</p>
+          <div class="rule">E (level: +)  →  T (level: *)  →  F (level: atoms)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Rewrite each level as: itself-op-next | next</h4>
+          <p>Every level's rule has exactly two productions: a left-recursive one that consumes its own operator, and a fallback that drops straight to the next tighter level. The bottom level handles atoms and parenthesised sub-expressions.</p>
+          <div class="rule">F → ( E ) | id</div>
+
+          <div class="step-flow">
+            <div class="flow-box amber">
+              <div class="lbl">Before — ambiguous</div>
+              <div class="rule-line">E → E + E
+    | E * E
+    | id</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box teal">
+              <div class="lbl">After — unambiguous</div>
+              <div class="rule-line">E → E + T | T
+T → T * F | F
+F → ( E ) | id</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h4>Verify: rebuild the troublesome string</h4>
+          <p>Re-derive the original test string against the new grammar. If only one parse tree comes out — and it matches the precedence and associativity you intended — the rewrite is correct.</p>
+          <div class="rule">id + id * id  →  now only:  E → E+T,  T → T*F  (i.e. id + (id*id))</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="examples">
+  <div class="wrap">
+    <div class="eyebrow">03 — Worked examples</div>
+    <h2>Ten ambiguous grammars, and their unambiguous equivalents</h2>
+
+    <div class="ex-list" id="exList"></div>
+  </div>
+</section>
+
+<footer>
+  Context-free grammar reference · derivations checked by construction, not by a parser generator
+</footer>
+
+<script>
+const examples = [
+  {
+    title: "Addition and multiplication",
+    string: "id + id * id",
+    amb: "E → E + E\n    | E * E\n    | id",
+    fix: "E → E + T | T\nT → T * F | F\nF → id",
+    note: "Classic precedence conflict: + and * sit at the same level, so the parser can't decide which applies first. Splitting into E/T levels fixes it.",
+    derivA: "E ⇒ E+E ⇒ id+E ⇒ id+E*E ⇒ id+id*E ⇒ id+id*id\ngroups as  id + (id*id)",
+    derivB: "E ⇒ E*E ⇒ E+E*E ⇒ id+E*E ⇒ id+id*E ⇒ id+id*id\ngroups as  (id+id) * id",
+    derivFixed: "E ⇒ E+T ⇒ T+T ⇒ F+T ⇒ id+T ⇒ id+T*F ⇒ id+F*F ⇒ id+id*F ⇒ id+id*id\nonly grouping available:  id + (id*id)"
+  },
+  {
+    title: "Four operators with parentheses",
+    string: "id - id / id",
+    amb: "E → E+E | E-E | E*E | E/E | (E) | id",
+    fix: "E → E+T | E-T | T\nT → T*F | T/F | F\nF → (E) | id",
+    note: "Same idea scaled up: two precedence tiers (+/− below, */÷ above), each left-recursive for left-to-right grouping.",
+    derivA: "E ⇒ E-E ⇒ id-E ⇒ id-E/E ⇒ id-id/E ⇒ id-id/id\ngroups as  id - (id/id)",
+    derivB: "E ⇒ E/E ⇒ E-E/E ⇒ id-E/E ⇒ id-id/E ⇒ id-id/id\ngroups as  (id-id) / id",
+    derivFixed: "E ⇒ E-T ⇒ T-T ⇒ F-T ⇒ id-T ⇒ id-T/F ⇒ id-F/F ⇒ id-id/F ⇒ id-id/id\nonly grouping available:  id - (id/id)"
+  },
+  {
+    title: "Dangling-else",
+    string: "if b1 then if b2 then s else s",
+    amb: "S → if b then S\n    | if b then S else S\n    | other",
+    fix: "S  → M | U\nM  → if b then M else M | other\nU  → if b then S | if b then M else U",
+    note: "The else can't tell which unmatched 'if' it belongs to. Splitting into Matched/Unmatched statements forces every else onto the nearest open if.",
+    derivA: "S ⇒ if b1 then S ⇒ if b1 then (if b2 then S else S) ⇒ if b1 then if b2 then s else s\nelse attaches to the INNER if (b2)",
+    derivB: "S ⇒ if b1 then S else S ⇒ if b1 then (if b2 then S) else S ⇒ if b1 then if b2 then s else s\nelse attaches to the OUTER if (b1)",
+    derivFixed: "S ⇒ U ⇒ if b1 then S ⇒ if b1 then M ⇒ if b1 then (if b2 then M else M) ⇒ if b1 then if b2 then s else s\nonly grouping available: else binds to nearest open if (b2)"
+  },
+  {
+    title: "Redundant self-recursion",
+    string: "a a a",
+    amb: "S → aS | Sa | a",
+    fix: "S → aS | a",
+    note: "Allowing recursion on both sides produces multiple derivation orders for the same string. Keeping only one recursive form removes the duplicate.",
+    derivA: "S ⇒ aS ⇒ aaS ⇒ aaa\nbuilt purely left-to-right via aS",
+    derivB: "S ⇒ Sa ⇒ aSa ⇒ aaa\nbuilt via Sa first, then aS — different tree shape",
+    derivFixed: "S ⇒ aS ⇒ aaS ⇒ aaa\nonly one production shape exists, so only one tree"
+  },
+  {
+    title: "Unrestricted concatenation",
+    string: "ab ab ab   (i.e. \"ababab\")",
+    amb: "S → SS | aSb | ε",
+    fix: "L → S L | ε\nS → a S b | ε",
+    note: "S → SS lets three balanced blocks be grouped two different ways — this is the same associativity ambiguity as E → E+E, just for concatenation.",
+    derivA: "S ⇒ SS ⇒ (SS)S ⇒ (ab·ab)·ab = ababab\ngrouped as  (block1 block2) block3",
+    derivB: "S ⇒ SS ⇒ S(SS) ⇒ ab·(ab·ab) = ababab\ngrouped as  block1 (block2 block3)",
+    derivFixed: "L ⇒ SL ⇒ S(SL) ⇒ S(S(SL)) ⇒ SSSε ⇒ ab·ab·ab = ababab\nright-recursive only — blocks peel off left to right, one tree"
+  },
+  {
+    title: "Two rules generating the same set",
+    string: "a a a",
+    amb: "S → A | B\nA → aA | ε\nB → Ba | ε",
+    fix: "S → aS | ε",
+    note: "A and B independently generate aⁿ, so every string is reachable through two separate non-terminal paths. Merging into one rule removes the overlap.",
+    derivA: "S ⇒ A ⇒ aA ⇒ aaA ⇒ aaaA ⇒ aaa\nvia the A-branch of S",
+    derivB: "S ⇒ B ⇒ Ba ⇒ Baa ⇒ Baaa ⇒ aaa\nvia the B-branch of S — a different tree, same string",
+    derivFixed: "S ⇒ aS ⇒ aaS ⇒ aaaS ⇒ aaa\nonly one non-terminal path exists now"
+  },
+  {
+    title: "Boolean expressions",
+    string: "true or false and not true",
+    amb: "B → B or B | B and B | not B | (B) | true | false",
+    fix: "B → B or C | C\nC → C and D | D\nD → not D | (B) | true | false",
+    note: "Same shape as arithmetic: or binds loosest, and binds tighter, not binds tightest — so three precedence levels replace the one flat rule.",
+    derivA: "B ⇒ B or B ⇒ true or B ⇒ true or (B and B) ⇒ true or (false and not true)\ngroups as  true or (false and (not true))",
+    derivB: "B ⇒ B and B ⇒ (B or B) and B ⇒ (true or false) and (not B) ⇒ (true or false) and not true\ngroups as  (true or false) and (not true)",
+    derivFixed: "B ⇒ B or C ⇒ true or C ⇒ true or (C and D) ⇒ true or (false and not true)\nonly grouping available:  true or (false and (not true))"
+  },
+  {
+    title: "Balanced parentheses",
+    string: "() () ()   (i.e. \"()()()\")",
+    amb: "S → SS | (S) | ε",
+    fix: "S → (S)S | ε",
+    note: "SS again allows arbitrary splits between three balanced blocks. Folding the second S inside a single production removes the extra grouping.",
+    derivA: "S ⇒ SS ⇒ (SS)S ⇒ ( ()() ) ()\ngrouped as  (block1 block2) block3",
+    derivB: "S ⇒ SS ⇒ S(SS) ⇒ () ( ()() )\ngrouped as  block1 (block2 block3)",
+    derivFixed: "S ⇒ (S)S ⇒ ()S ⇒ ()(S)S ⇒ ()()S ⇒ ()()(S)S ⇒ ()()()S ⇒ ()()()\nright-recursive only — one tree"
+  },
+  {
+    title: "Left- and right-recursive lists mixed",
+    string: "id + id + id",
+    amb: "L → L + id | id + L | id",
+    fix: "L → L + id | id",
+    note: "Offering both a left-recursive and a right-recursive route to the same list lets the parser build it two ways. Pick one direction — left, for left-to-right reading.",
+    derivA: "L ⇒ L+id ⇒ L+id+id ⇒ id+id+id\ngroups as  (id+id) + id",
+    derivB: "L ⇒ id+L ⇒ id+(L+id) ⇒ id+(id+id)\ngroups as  id + (id+id)",
+    derivFixed: "L ⇒ L+id ⇒ L+id+id ⇒ id+id+id\nonly the left-recursive route exists:  (id+id) + id"
+  },
+  {
+    title: "Chained assignment",
+    string: "id = id = id",
+    amb: "E → id = E | E = id | id",
+    fix: "E → id = E | id",
+    note: "Assignment is right-associative in most languages (a = b = c means a = (b = c)); the right-recursive production alone captures that, so the left-recursive one is dropped.",
+    derivA: "E ⇒ id=E ⇒ id=(id=E) ⇒ id=id=id\ngroups as  id = (id = id)",
+    derivB: "E ⇒ E=id ⇒ (id=E)=id ⇒ (id=id)=id\ngroups as  (id = id) = id",
+    derivFixed: "E ⇒ id=E ⇒ id=id=E ⇒ id=id=id\nonly the right-recursive route exists:  id = (id = id)"
+  }
+];
+
+const list = document.getElementById('exList');
+examples.forEach((ex, i) => {
+  const el = document.createElement('div');
+  el.className = 'ex';
+  el.innerHTML = `
+    <div class="ex-head" role="button" tabindex="0">
+      <span class="ex-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="ex-title">${ex.title} <span style="color:var(--paper-dim);font-family:'IBM Plex Mono',monospace;font-size:12.5px;">— ${ex.string}</span></span>
+      <span class="ex-plus">+</span>
+    </div>
+    <div class="ex-body">
+      <div class="ex-body-inner">
+        <div class="ex-col amber">
+          <div class="lbl">Ambiguous</div>
+          <div class="rule">${ex.amb}</div>
+        </div>
+        <div class="ex-col teal">
+          <div class="lbl">Unambiguous</div>
+          <div class="rule">${ex.fix}</div>
+        </div>
+        <div class="ex-note">${ex.note}</div>
+
+        <div class="check">
+          <div class="check-head">
+            <span class="check-lbl">Ambiguity check — test string</span>
+            <span class="check-string">${ex.string}</span>
+          </div>
+          <div class="check-grid">
+            <div class="deriv amber">
+              <div class="deriv-lbl">Derivation 1</div>
+              <div class="deriv-body">${ex.derivA}</div>
+            </div>
+            <div class="deriv amber">
+              <div class="deriv-lbl">Derivation 2</div>
+              <div class="deriv-body">${ex.derivB}</div>
+            </div>
+          </div>
+          <div class="check-verdict amber-text">✕ two distinct trees for one string → grammar is ambiguous</div>
+
+          <div class="check-grid one">
+            <div class="deriv teal">
+              <div class="deriv-lbl">Unique derivation (fixed grammar)</div>
+              <div class="deriv-body">${ex.derivFixed}</div>
+            </div>
+          </div>
+          <div class="check-verdict teal-text">✓ only one tree is reachable → grammar is unambiguous</div>
+        </div>
+      </div>
+    </div>
+  `;
+  const head = el.querySelector('.ex-head');
+  const body = el.querySelector('.ex-body');
+  function toggle(){
+    const isOpen = el.classList.contains('open');
+    if(isOpen){
+      el.classList.remove('open');
+      body.style.maxHeight = 0;
+    } else {
+      el.classList.add('open');
+      body.style.maxHeight = body.scrollHeight + 'px';
+    }
+  }
+  head.addEventListener('click', toggle);
+  head.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(); }});
+  list.appendChild(el);
+});
+// open first example by default
+list.firstElementChild.querySelector('.ex-head').click();
+</script>
+
+</body>
+</html>
